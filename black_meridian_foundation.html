@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000000">
+<title>The Black Meridian Foundation</title>
+
+<style>
+    :root {
+        --ease: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+    }
+
+    body {
+        cursor: default;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
+    }
+
+    /* ============================================================
+       ATMOSPHERE
+       ============================================================ */
+
+    .world {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        background:
+            radial-gradient(
+                ellipse at 50% 50%,
+                rgba(255,255,255,.018) 0%,
+                rgba(255,255,255,.006) 26%,
+                transparent 60%
+            ),
+            #000;
+        perspective: 1400px;
+        isolation: isolate;
+    }
+
+    .vignette {
+        position: absolute;
+        inset: -2px;
+        pointer-events: none;
+        z-index: 20;
+        background:
+            radial-gradient(
+                ellipse at center,
+                transparent 34%,
+                rgba(0,0,0,.28) 67%,
+                rgba(0,0,0,.72) 100%
+            );
+    }
+
+    .grain {
+        position: absolute;
+        inset: -50%;
+        pointer-events: none;
+        z-index: 30;
+        opacity: .026;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+        animation: grain 0.28s steps(2) infinite;
+    }
+
+    @keyframes grain {
+        0%   { transform: translate3d(0,0,0); }
+        25%  { transform: translate3d(2%,-1%,0); }
+        50%  { transform: translate3d(-1%,2%,0); }
+        75%  { transform: translate3d(1%,1%,0); }
+        100% { transform: translate3d(-2%,-1%,0); }
+    }
+
+    .cursor-light {
+        position: absolute;
+        width: 560px;
+        height: 560px;
+        left: 50%;
+        top: 50%;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 12;
+        opacity: 0;
+        transform: translate(-50%, -50%);
+        background:
+            radial-gradient(
+                circle,
+                rgba(255,255,255,.105) 0%,
+                rgba(255,255,255,.060) 11%,
+                rgba(255,255,255,.028) 25%,
+                rgba(255,255,255,.010) 43%,
+                rgba(255,255,255,.003) 58%,
+                transparent 76%
+            );
+        mix-blend-mode: screen;
+        transition: opacity 3.5s ease;
+        will-change: left, top;
+        filter: blur(3px);
+    }
+
+    .world:hover .cursor-light {
+        opacity: .10;
+    }
+
+    .world:has(.secret.enter) .cursor-light {
+        opacity: .82;
+    }
+
+    /* ============================================================
+       IMAGE STATES
+       ============================================================ */
+
+    .state {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        transform-style: preserve-3d;
+    }
+
+    .image-wrap {
+        position: relative;
+        width: min(88vw, 980px);
+        max-height: 88vh;
+        display: grid;
+        place-items: center;
+        transform-style: preserve-3d;
+        will-change: transform, opacity, filter;
+    }
+
+    .image-wrap::before {
+        content: "";
+        position: absolute;
+        width: 48%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: rgba(255,255,255,.035);
+        filter: blur(70px);
+        opacity: .45;
+        transform: translateZ(-80px) scale(1.1);
+        pointer-events: none;
+        transition: opacity 1.2s var(--ease), transform 1.2s var(--ease);
+    }
+
+    .art {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-height: 88vh;
+        object-fit: contain;
+        user-select: none;
+        -webkit-user-drag: none;
+        cursor: pointer;
+
+        filter:
+            contrast(1.02)
+            brightness(.94)
+            drop-shadow(0 24px 50px rgba(0,0,0,.72))
+            drop-shadow(0 0 28px rgba(255,255,255,.018));
+
+        transform: translateZ(0) scale(1);
+        transition:
+            transform 2.8s cubic-bezier(.22,1,.36,1),
+            filter 2.8s ease,
+            opacity 2.6s cubic-bezier(.22,1,.36,1);
+    }
+
+    .main .art:hover {
+        transform: translateZ(12px) scale(1.004);
+        filter:
+            contrast(1.015)
+            brightness(.98)
+            drop-shadow(0 27px 55px rgba(0,0,0,.78))
+            drop-shadow(0 0 30px rgba(255,255,255,.022));
+    }
+
+    .main {
+        z-index: 10;
+        opacity: 1;
+        transform: scale(1) translateZ(0);
+        filter: blur(0);
+        transition:
+            opacity 5.5s cubic-bezier(.22,1,.36,1),
+            transform 6.5s cubic-bezier(.22,1,.36,1),
+            filter 5.5s ease;
+    }
+
+    .main.exit {
+        opacity: 0;
+        transform: scale(.996) translateZ(-28px);
+        filter: blur(1.8px);
+        pointer-events: none;
+    }
+
+    .secret {
+        z-index: 9;
+        opacity: 0;
+        transform: scale(1.008) translateZ(25px);
+        filter: blur(3px);
+        pointer-events: none;
+        transition:
+            opacity 6.5s cubic-bezier(.22,1,.36,1),
+            transform 7s cubic-bezier(.22,1,.36,1),
+            filter 6.5s ease;
+    }
+
+    .secret.enter {
+        opacity: 1;
+        transform: scale(1) translateZ(0);
+        filter: blur(0);
+        pointer-events: auto;
+    }
+
+    .secret .art {
+        cursor: default;
+        filter:
+            contrast(1.10)
+            brightness(1.04)
+            saturate(.96)
+            drop-shadow(0 25px 55px rgba(0,0,0,.82))
+            drop-shadow(0 0 38px rgba(255,255,255,.020));
+        transition:
+            transform 4s cubic-bezier(.22,1,.36,1),
+            filter 4s ease;
+    }
+
+    .secret.enter .art:hover {
+        transform: translateZ(9px) scale(1.0025);
+        filter:
+            contrast(1.115)
+            brightness(1.08)
+            saturate(.98)
+            drop-shadow(0 28px 58px rgba(0,0,0,.84))
+            drop-shadow(0 0 40px rgba(255,255,255,.028));
+    }
+
+    /* A very faint illumination pulse when the secret is revealed. */
+    .secret.enter .image-wrap::before {
+        opacity: .2;
+        transform: translateZ(-50px) scale(1.16);
+    }
+
+    /* ============================================================
+       ACCESSIBILITY / MOBILE
+       ============================================================ */
+
+    @media (max-width: 700px) {
+        .image-wrap {
+            width: 96vw;
+            max-height: 82vh;
+        }
+
+        .art {
+            max-height: 82vh;
+        }
+
+        .cursor-light {
+            display: none;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: .001ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .001ms !important;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<!--
+=====================================================================
+THE BLACK MERIDIAN FOUNDATION
+SOURCE ARCHIVE / DISCOVERY LAYER
+
+This message is intentionally exposed in the page source.
+
+ENCRYPTED MESSAGE:
+VGhlIE1lcmlkaWFuIGRvZXMgbm90IGRpZSwgaXQgb25seSB3YWl0cy4=
+
+CIPHER:
+BASE64
+
+INSTRUCTION:
+Decrypt the message above.
+=====================================================================
+-->
+
+<div class="world" id="world">
+
+    <div class="cursor-light" id="cursorLight"></div>
+
+    <!-- MAIN PAGE -->
+    <section class="state main" id="mainState" aria-label="The Black Meridian Foundation">
+        <div class="image-wrap" id="mainWrap">
+            <img
+                class="art"
+                id="mainImage"
+                src="https://i.ibb.co/QFgNV7jX/Chat-GPT-Image-Sep-28-2026-01-07-37-AM.png"
+                alt="The Black Meridian Foundation"
+                draggable="false"
+            >
+        </div>
+    </section>
+
+    <!-- SECOND / SECRET PAGE -->
+    <section class="state secret" id="secretState" aria-label="The Meridian Endures">
+        <div class="image-wrap" id="secretWrap">
+            <img
+                class="art"
+                id="secretImage"
+                src="https://i.ibb.co/0RPn13Md/Chat-GPT-Image-Sep-28-2026-01-12-34-AM.png"
+                alt="The Meridian Endures"
+                draggable="false"
+            >
+        </div>
+    </section>
+
+    <div class="vignette"></div>
+    <div class="grain"></div>
+</div>
+
+<script>
+(() => {
+    const world = document.getElementById("world");
+    const mainState = document.getElementById("mainState");
+    const secretState = document.getElementById("secretState");
+    const mainWrap = document.getElementById("mainWrap");
+    const secretWrap = document.getElementById("secretWrap");
+    const mainImage = document.getElementById("mainImage");
+    const cursorLight = document.getElementById("cursorLight");
+
+    let secretMode = false;
+    let pointerX = 0.5;
+    let pointerY = 0.5;
+    let raf = null;
+
+    function enterSecret() {
+        if (secretMode) return;
+
+        secretMode = true;
+
+        mainState.classList.add("exit");
+
+        // Slight pause makes the disappearance feel deliberate rather than
+        // like a normal webpage route change.
+        window.setTimeout(() => {
+            secretState.classList.add("enter");
+        }, 700);
+    }
+
+    function returnHome() {
+        if (!secretMode) return;
+
+        secretMode = false;
+
+        secretState.classList.remove("enter");
+
+        window.setTimeout(() => {
+            mainState.classList.remove("exit");
+        }, 1400);
+    }
+
+    // Only the primary artwork opens the second state.
+    mainImage.addEventListener("click", (event) => {
+        event.stopPropagation();
+        enterSecret();
+    });
+
+    // Anywhere on the secret page returns home.
+    secretState.addEventListener("click", () => {
+        returnHome();
+    });
+
+    // Cursor illumination + extremely restrained 3D movement.
+    document.addEventListener("mousemove", (event) => {
+        pointerX = event.clientX / window.innerWidth;
+        pointerY = event.clientY / window.innerHeight;
+
+        cursorLight.style.left = `${event.clientX}px`;
+        cursorLight.style.top = `${event.clientY}px`;
+
+        if (!secretMode) {
+            if (!raf) {
+                raf = requestAnimationFrame(() => {
+                    const rx = (0.5 - pointerY) * 1.8;
+                    const ry = (pointerX - 0.5) * 1.8;
+
+                    mainWrap.style.transform =
+                        `translate3d(0,0,0) rotateX(${rx}deg) rotateY(${ry}deg)`;
+
+                    raf = null;
+                });
+            }
+        }
+    });
+
+    // Keep the first screen pristine after leaving the secret state.
+    window.addEventListener("mouseleave", () => {
+        mainWrap.style.transform =
+            "translate3d(0,0,0) rotateX(0deg) rotateY(0deg)";
+    });
+
+    // ESC is an unobtrusive second way back.
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && secretMode) {
+            returnHome();
+        }
+    });
+})();
+</script>
+
+</body>
+</html>
